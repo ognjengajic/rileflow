@@ -1,41 +1,154 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+
 import Sidebar from "@/components/Sidebar";
+import ArticlesHeader from "@/components/articles/ArticlesHeader";
+import ArticlesTable from "@/components/articles/ArticlesTable";
+import ArticleForm from "@/components/articles/ArticleForm";
+import DeleteArticleDialog from "@/components/articles/DeleteArticleDialog";
+import ExcelImport from "@/components/articles/ExcelImport";
+
+import type { Article, ArticleFormData } from "@/types/article";
+
+import {
+  initialArticles,
+  emptyArticleForm,
+  searchArticles,
+  hasDuplicateArticle,
+} from "@/lib/articles";
 
 export default function Home() {
+  const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const [search, setSearch] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState<ArticleFormData>(emptyArticleForm);
+  const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
+
+  const filteredArticles = searchArticles(articles, search);
+
+  function openNewForm() {
+    setEditingId(null);
+    setForm({ ...emptyArticleForm });
+    setShowForm(true);
+  }
+
+  function openEditForm(article: Article) {
+    setEditingId(article.id);
+
+    setForm({
+      name: article.name,
+      code: article.code,
+      serialNumber: article.serialNumber,
+      price: String(article.price),
+      vat: String(article.vat),
+      unit: article.unit,
+    });
+
+    setShowForm(true);
+  }
+
+  function saveArticle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (hasDuplicateArticle(articles, form, editingId)) {
+      alert("Šifra ili serijski broj već postoje.");
+      return;
+    }
+
+    if (editingId !== null) {
+      setArticles((current) =>
+        current.map((article) =>
+          article.id === editingId
+            ? {
+                ...article,
+                name: form.name.trim(),
+                code: form.code.trim(),
+                serialNumber: form.serialNumber.trim(),
+                price: Number(form.price),
+                vat: Number(form.vat),
+                unit: form.unit,
+              }
+            : article,
+        ),
+      );
+    } else {
+      setArticles((current) => [
+        ...current,
+        {
+          id: Date.now(),
+          name: form.name.trim(),
+          code: form.code.trim(),
+          serialNumber: form.serialNumber.trim(),
+          price: Number(form.price),
+          vat: Number(form.vat),
+          unit: form.unit,
+        },
+      ]);
+    }
+
+    setShowForm(false);
+    setEditingId(null);
+    setForm({ ...emptyArticleForm });
+  }
+
+  function deleteArticle() {
+    if (!deletingArticle) return;
+
+    setArticles((current) =>
+      current.filter((article) => article.id !== deletingArticle.id),
+    );
+
+    setDeletingArticle(null);
+  }
+
+  function handleExcelFile(file: File) {
+    alert(
+      `Izabran je fajl: ${file.name}. Uvoz ćemo povezati u narednom koraku.`,
+    );
+  }
+
   return (
     <main className="flex min-h-screen bg-[#f6f8f6]">
       <Sidebar />
 
-      <section className="flex-1 p-10">
-        <header className="mb-10 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold tracking-[1.5px] text-[#89968e]">
-              PREGLED POSLOVANJA
-            </p>
+      <section className="min-w-0 flex-1 p-6 md:p-10">
+        <ArticlesHeader onAddArticle={openNewForm} />
 
-            <h1 className="mt-2 text-3xl font-bold text-[#1b2b22]">
-              Dashboard
-            </h1>
-          </div>
-
-          <button className="rounded-lg bg-[#174c35] px-5 py-3 text-sm font-semibold text-white hover:bg-[#236445]">
-            + Novi predračun
-          </button>
-        </header>
-
-        <div className="rounded-xl border border-[#e7ece8] bg-white p-10">
-          <p className="text-xs font-bold tracking-widest text-[#174c35]">
-            RILEFLOW
-          </p>
-
-          <h2 className="mt-3 text-2xl font-semibold text-[#1b2b22]">
-            Dobrodošao u RileFlow
-          </h2>
-
-          <p className="mt-2 text-sm text-[#89968e]">
-            Upravljaj predračunima, proizvodima i kupcima na jednom mjestu.
-          </p>
+        <div className="mb-6">
+          <ExcelImport onFileSelect={handleExcelFile} />
         </div>
+
+        <ArticlesTable
+          articles={filteredArticles}
+          search={search}
+          onSearchChange={setSearch}
+          onEdit={openEditForm}
+          onDelete={(id) => {
+            const article = articles.find((item) => item.id === id);
+            if (article) setDeletingArticle(article);
+          }}
+        />
       </section>
+
+      {showForm && (
+        <ArticleForm
+          form={form}
+          setForm={setForm}
+          editing={editingId !== null}
+          onSubmit={saveArticle}
+          onClose={() => setShowForm(false)}
+        />
+      )}
+
+      {deletingArticle && (
+        <DeleteArticleDialog
+          articleName={deletingArticle.name}
+          onConfirm={deleteArticle}
+          onCancel={() => setDeletingArticle(null)}
+        />
+      )}
     </main>
   );
 }
