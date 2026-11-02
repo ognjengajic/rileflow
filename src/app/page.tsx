@@ -103,10 +103,33 @@ export default function Home() {
     setDeletingArticle(null);
   }
 
-  function handleExcelFile(file: File) {
-    alert(
-      `Izabran je fajl: ${file.name}. Uvoz ćemo povezati u narednom koraku.`,
-    );
+  function importArticles(names: string[]) {
+    setArticles((current) => {
+      const existingNames = new Set(
+        current.map((article) => article.name.trim().toLowerCase()),
+      );
+
+      const newArticles = names
+        .filter((name) => !existingNames.has(name.trim().toLowerCase()))
+        .map((name, index) => ({
+          id: Date.now() + index,
+          name: name.trim(),
+          code: "",
+          serialNumber: "",
+          price: 0,
+          vat: 17,
+          unit: "kom",
+        }));
+
+      if (newArticles.length === 0) {
+        alert("Svi izabrani artikli već postoje u katalogu.");
+        return current;
+      }
+
+      alert(`Uspješno dodano ${newArticles.length} artikala.`);
+
+      return [...current, ...newArticles];
+    });
   }
 
   return (
@@ -117,7 +140,7 @@ export default function Home() {
         <ArticlesHeader onAddArticle={openNewForm} />
 
         <div className="mb-6">
-          <ExcelImport onFileSelect={handleExcelFile} />
+          <ExcelImport onImport={importArticles} />
         </div>
 
         <ArticlesTable

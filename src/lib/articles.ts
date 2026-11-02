@@ -59,8 +59,10 @@ export function hasDuplicateArticle(
   return articles.some(
     (article) =>
       article.id !== editingId &&
-      (article.code.toLowerCase() === form.code.trim().toLowerCase() ||
-        article.serialNumber.toLowerCase() ===
-          form.serialNumber.trim().toLowerCase()),
+      ((form.code.trim() !== "" &&
+        article.code.toLowerCase() === form.code.trim().toLowerCase()) ||
+        (form.serialNumber.trim() !== "" &&
+          article.serialNumber.toLowerCase() ===
+            form.serialNumber.trim().toLowerCase())),
   );
 }
