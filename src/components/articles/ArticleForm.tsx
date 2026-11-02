@@ -5,7 +5,7 @@ import type { ArticleFormData } from "@/types/article";
 
 type ArticleFormProps = {
   form: ArticleFormData;
-  setForm: (form: ArticleFormData) => void;
+  onFieldChange: (field: keyof ArticleFormData, value: string) => void;
   editing: boolean;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
@@ -13,7 +13,7 @@ type ArticleFormProps = {
 
 export default function ArticleForm({
   form,
-  setForm,
+  onFieldChange,
   editing,
   onSubmit,
   onClose,
@@ -44,7 +44,7 @@ export default function ArticleForm({
             <input
               required
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => onFieldChange("name", e.target.value)}
               className="w-full rounded-lg border border-[#e7ece8] px-4 py-3 text-sm outline-none focus:border-[#174c35]"
               placeholder="Unesite naziv artikla"
             />
@@ -58,7 +58,7 @@ export default function ArticleForm({
               <input
                 required
                 value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                onChange={(e) => onFieldChange("code", e.target.value)}
                 className="w-full rounded-lg border border-[#e7ece8] px-4 py-3 text-sm outline-none focus:border-[#174c35]"
                 placeholder="ART-001"
               />
@@ -71,9 +71,7 @@ export default function ArticleForm({
               <input
                 required
                 value={form.serialNumber}
-                onChange={(e) =>
-                  setForm({ ...form, serialNumber: e.target.value })
-                }
+                onChange={(e) => onFieldChange("serialNumber", e.target.value)}
                 className="w-full rounded-lg border border-[#e7ece8] px-4 py-3 text-sm outline-none focus:border-[#174c35]"
                 placeholder="Serijski broj"
               />
@@ -89,7 +87,7 @@ export default function ArticleForm({
                 step="0.01"
                 type="number"
                 value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                onChange={(e) => onFieldChange("price", e.target.value)}
                 className="w-full rounded-lg border border-[#e7ece8] px-4 py-3 text-sm outline-none focus:border-[#174c35]"
                 placeholder="0.00"
               />
@@ -106,7 +104,7 @@ export default function ArticleForm({
                 step="0.01"
                 type="number"
                 value={form.vat}
-                onChange={(e) => setForm({ ...form, vat: e.target.value })}
+                onChange={(e) => onFieldChange("vat", e.target.value)}
                 className="w-full rounded-lg border border-[#e7ece8] px-4 py-3 text-sm outline-none focus:border-[#174c35]"
               />
             </div>
@@ -118,7 +116,7 @@ export default function ArticleForm({
             </label>
             <select
               value={form.unit}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              onChange={(e) => onFieldChange("unit", e.target.value)}
               className="w-full rounded-lg border border-[#e7ece8] bg-white px-4 py-3 text-sm outline-none focus:border-[#174c35]"
             >
               <option value="kom">Komad (kom)</option>

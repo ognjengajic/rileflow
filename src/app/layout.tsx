@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+import { ArticlesProvider } from "@/contexts/ArticlesContext";
+
 export const metadata: Metadata = {
   title: "RileFlow",
   description: "Smart Business Documents",
@@ -13,7 +15,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="sr">
-      <body>{children}</body>
+      <body>
+        <ArticlesProvider>{children}</ArticlesProvider>
+      </body>
     </html>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useReducer, useState, type FormEvent } from "react";
 
 import Sidebar from "@/components/Sidebar";
 import ArticlesHeader from "@/components/articles/ArticlesHeader";
@@ -9,41 +9,58 @@ import ArticleForm from "@/components/articles/ArticleForm";
 import DeleteArticleDialog from "@/components/articles/DeleteArticleDialog";
 import ExcelImport from "@/components/articles/ExcelImport";
 
+import { useArticles } from "@/contexts/ArticlesContext";
+
 import type { Article, ArticleFormData } from "@/types/article";
 
 import {
-  initialArticles,
   emptyArticleForm,
   searchArticles,
   hasDuplicateArticle,
 } from "@/lib/articles";
 
+import { articleFormReducer } from "@/lib/articleFormReducer";
+
 export default function Home() {
-  const [articles, setArticles] = useState<Article[]>(initialArticles);
+  const { articles, addArticle, updateArticle, deleteArticle, importArticles } =
+    useArticles();
+
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState<ArticleFormData>(emptyArticleForm);
+
+  const [form, dispatchForm] = useReducer(articleFormReducer, {
+    ...emptyArticleForm,
+  });
+
   const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
 
   const filteredArticles = searchArticles(articles, search);
 
   function openNewForm() {
     setEditingId(null);
-    setForm({ ...emptyArticleForm });
+
+    dispatchForm({
+      type: "RESET_FORM",
+      payload: { ...emptyArticleForm },
+    });
+
     setShowForm(true);
   }
 
   function openEditForm(article: Article) {
     setEditingId(article.id);
 
-    setForm({
-      name: article.name,
-      code: article.code,
-      serialNumber: article.serialNumber,
-      price: String(article.price),
-      vat: String(article.vat),
-      unit: article.unit,
+    dispatchForm({
+      type: "SET_FORM",
+      payload: {
+        name: article.name,
+        code: article.code,
+        serialNumber: article.serialNumber,
+        price: String(article.price),
+        vat: String(article.vat),
+        unit: article.unit,
+      },
     });
 
     setShowForm(true);
@@ -57,79 +74,46 @@ export default function Home() {
       return;
     }
 
+    const articleData = {
+      name: form.name.trim(),
+      code: form.code.trim(),
+      serialNumber: form.serialNumber.trim(),
+      price: Number(form.price),
+      vat: Number(form.vat),
+      unit: form.unit,
+    };
+
     if (editingId !== null) {
-      setArticles((current) =>
-        current.map((article) =>
-          article.id === editingId
-            ? {
-                ...article,
-                name: form.name.trim(),
-                code: form.code.trim(),
-                serialNumber: form.serialNumber.trim(),
-                price: Number(form.price),
-                vat: Number(form.vat),
-                unit: form.unit,
-              }
-            : article,
-        ),
-      );
+      updateArticle(editingId, articleData);
     } else {
-      setArticles((current) => [
-        ...current,
-        {
-          id: Date.now(),
-          name: form.name.trim(),
-          code: form.code.trim(),
-          serialNumber: form.serialNumber.trim(),
-          price: Number(form.price),
-          vat: Number(form.vat),
-          unit: form.unit,
-        },
-      ]);
+      addArticle(articleData);
     }
 
     setShowForm(false);
     setEditingId(null);
-    setForm({ ...emptyArticleForm });
+
+    dispatchForm({
+      type: "RESET_FORM",
+      payload: { ...emptyArticleForm },
+    });
   }
 
-  function deleteArticle() {
+  function confirmDeleteArticle() {
     if (!deletingArticle) return;
 
-    setArticles((current) =>
-      current.filter((article) => article.id !== deletingArticle.id),
-    );
-
+    deleteArticle(deletingArticle.id);
     setDeletingArticle(null);
   }
 
-  function importArticles(names: string[]) {
-    setArticles((current) => {
-      const existingNames = new Set(
-        current.map((article) => article.name.trim().toLowerCase()),
-      );
+  function handleImportArticles(names: string[]) {
+    const importedCount = importArticles(names);
 
-      const newArticles = names
-        .filter((name) => !existingNames.has(name.trim().toLowerCase()))
-        .map((name, index) => ({
-          id: Date.now() + index,
-          name: name.trim(),
-          code: "",
-          serialNumber: "",
-          price: 0,
-          vat: 17,
-          unit: "kom",
-        }));
+    if (importedCount === 0) {
+      alert("Svi izabrani artikli već postoje u katalogu.");
+      return;
+    }
 
-      if (newArticles.length === 0) {
-        alert("Svi izabrani artikli već postoje u katalogu.");
-        return current;
-      }
-
-      alert(`Uspješno dodano ${newArticles.length} artikala.`);
-
-      return [...current, ...newArticles];
-    });
+    alert(`Uspješno dodano ${importedCount} artikala.`);
   }
 
   return (
@@ -140,7 +124,7 @@ export default function Home() {
         <ArticlesHeader onAddArticle={openNewForm} />
 
         <div className="mb-6">
-          <ExcelImport onImport={importArticles} />
+          <ExcelImport onImport={handleImportArticles} />
         </div>
 
         <ArticlesTable
@@ -158,7 +142,13 @@ export default function Home() {
       {showForm && (
         <ArticleForm
           form={form}
-          setForm={setForm}
+          onFieldChange={(field, value) =>
+            dispatchForm({
+              type: "UPDATE_FIELD",
+              field,
+              value,
+            })
+          }
           editing={editingId !== null}
           onSubmit={saveArticle}
           onClose={() => setShowForm(false)}
@@ -168,7 +158,7 @@ export default function Home() {
       {deletingArticle && (
         <DeleteArticleDialog
           articleName={deletingArticle.name}
-          onConfirm={deleteArticle}
+          onConfirm={confirmDeleteArticle}
           onCancel={() => setDeletingArticle(null)}
         />
       )}
