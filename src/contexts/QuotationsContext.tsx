@@ -3,13 +3,29 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 
 import type { Article } from "@/types/article";
-import type { Quotation, QuotationItem } from "@/types/quotation";
+import type {
+  Quotation,
+  QuotationItem,
+  QuotationCustomer,
+} from "@/types/quotation";
 
 import { createQuotationItem } from "@/types/quotation";
+
+const emptyCustomer: QuotationCustomer = {
+  name: "",
+  address: "",
+  taxNumber: "",
+  phone: "",
+  email: "",
+};
 
 type QuotationsContextType = {
   currentItems: QuotationItem[];
   quotations: Quotation[];
+  currentCustomer: QuotationCustomer;
+  quotationNumber: string;
+  setCurrentCustomer: (customer: QuotationCustomer) => void;
+  setQuotationNumber: (number: string) => void;
   addArticleToQuotation: (article: Article) => void;
   decreaseArticleQuantity: (articleId: number) => void;
   setArticleQuantity: (article: Article, quantity: number) => void;
@@ -24,9 +40,102 @@ const QuotationsContext = createContext<QuotationsContextType | undefined>(
   undefined,
 );
 
+function createTestQuotations(): Quotation[] {
+  const customers = [
+    "Marković Trade",
+    "Tech Solutions",
+    "Milošević Company",
+    "Elektro Sistem",
+    "Nova Gradnja",
+    "Digital Pro",
+    "Auto Servis Marko",
+    "Balkan Commerce",
+    "Univerzal Promet",
+    "Matić Elektronik",
+  ];
+
+  const cities = [
+    "Zvornik",
+    "Bijeljina",
+    "Tuzla",
+    "Brčko",
+    "Banja Luka",
+    "Sarajevo",
+    "Doboj",
+    "Lukavac",
+    "Šabac",
+    "Loznica",
+  ];
+
+  return Array.from({ length: 50 }, (_, index) => {
+    const customerIndex = index % customers.length;
+
+    const items: QuotationItem[] = Array.from(
+      { length: (index % 3) + 1 },
+      (_, itemIndex) => {
+        const price = 25 + ((index * 37 + itemIndex * 53) % 475);
+        const quantity = ((index + itemIndex) % 5) + 1;
+
+        return {
+          articleId: 800000 + index * 10 + itemIndex,
+          name: [
+            "Laptop računar",
+            "Monitor LED",
+            "Tastatura",
+            "Miš bežični",
+            "Štampač",
+            "Mrežni ruter",
+          ][(index + itemIndex) % 6],
+          code: `TEST-${index + 1}-${itemIndex + 1}`,
+          serialNumber: `SN-${800000 + index * 10 + itemIndex}`,
+          price,
+          quantity,
+          unit: "kom",
+          vat: 17,
+        };
+      },
+    );
+
+    const totalWithoutVat = items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
+
+    const totalVat = items.reduce(
+      (sum, item) => sum + (item.price * item.quantity * item.vat) / 100,
+      0,
+    );
+
+    return {
+      id: 900001 + index,
+      number: `P-2026-TEST-${String(index + 1).padStart(3, "0")}`,
+      date: new Date(Date.UTC(2026, 0, 1 + index * 5)).toISOString(),
+      customer: {
+        name: `${customers[customerIndex]} ${String(index + 1).padStart(2, "0")}`,
+        address: `Ulica ${index + 1}, ${cities[customerIndex]}`,
+        taxNumber: `${450000000 + index}`,
+        phone: `+387 65 123 ${String(index + 1).padStart(3, "0")}`,
+        email: `kupac${index + 1}@example.com`,
+      },
+      items,
+      totalWithoutVat,
+      totalVat,
+      totalWithVat: totalWithoutVat + totalVat,
+    };
+  });
+}
+
 export function QuotationsProvider({ children }: { children: ReactNode }) {
   const [currentItems, setCurrentItems] = useState<QuotationItem[]>([]);
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const [quotations, setQuotations] =
+    useState<Quotation[]>(createTestQuotations);
+
+  const [currentCustomer, setCurrentCustomer] =
+    useState<QuotationCustomer>(emptyCustomer);
+
+  const [quotationNumber, setQuotationNumber] = useState(
+    `P-${new Date().getFullYear()}-001`,
+  );
 
   function addArticleToQuotation(article: Article) {
     setCurrentItems((current) => {
@@ -86,6 +195,7 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
 
   function clearCurrentQuotation() {
     setCurrentItems([]);
+    setCurrentCustomer(emptyCustomer);
   }
 
   function deleteQuotation(id: number) {
@@ -108,6 +218,7 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
     setQuotations((current) => [savedQuotation, ...current]);
 
     setCurrentItems([]);
+    setCurrentCustomer(emptyCustomer);
 
     return savedQuotation;
   }
@@ -117,6 +228,10 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
       value={{
         currentItems,
         quotations,
+        currentCustomer,
+        quotationNumber,
+        setCurrentCustomer,
+        setQuotationNumber,
         addArticleToQuotation,
         decreaseArticleQuantity,
         setArticleQuantity,

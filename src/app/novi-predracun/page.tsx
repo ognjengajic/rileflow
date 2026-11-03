@@ -1,27 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { useQuotations } from "../../contexts/QuotationsContext";
 import type { QuotationCustomer } from "@/types/quotation";
 
-const emptyCustomer: QuotationCustomer = {
-  name: "",
-  address: "",
-  taxNumber: "",
-  phone: "",
-  email: "",
-};
-
 export default function NewQuotationPage() {
-  const { currentItems, decreaseArticleQuantity, saveQuotation } =
-    useQuotations();
+  const {
+    currentItems,
+    currentCustomer,
+    setCurrentCustomer,
+    quotationNumber,
+    decreaseArticleQuantity,
+    saveQuotation,
+  } = useQuotations();
 
-  const [customer, setCustomer] = useState<QuotationCustomer>(emptyCustomer);
-
-  const [quotationNumber, setQuotationNumber] = useState(
-    `P-${new Date().getFullYear()}-001`,
-  );
+  const customer = currentCustomer;
 
   const totalWithoutVat = currentItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
@@ -36,10 +29,10 @@ export default function NewQuotationPage() {
   const totalWithVat = totalWithoutVat + totalVat;
 
   function updateCustomer(field: keyof QuotationCustomer, value: string) {
-    setCustomer((current) => ({
-      ...current,
+    setCurrentCustomer({
+      ...customer,
       [field]: value,
-    }));
+    });
   }
 
   function handleSave() {
@@ -64,15 +57,14 @@ export default function NewQuotationPage() {
 
     if (saved) {
       alert("Predračun je uspješno sačuvan.");
-      setCustomer(emptyCustomer);
     }
   }
 
   return (
-    <main className="flex min-h-screen bg-[#f6f8f6]">
+    <main className="min-h-screen bg-[#f6f8f6] pl-[250px] max-md:pl-[72px]">
       <Sidebar />
 
-      <section className="min-w-0 flex-1 p-6 md:p-10">
+      <section className="min-w-0 p-6 md:p-10">
         <div className="mb-8">
           <p className="text-sm text-[#89968e]">Predračuni / Novi predračun</p>
 

@@ -11,7 +11,7 @@ import ExcelImport from "@/components/articles/ExcelImport";
 
 import { useArticles } from "@/contexts/ArticlesContext";
 
-import type { Article, ArticleFormData } from "@/types/article";
+import type { Article } from "@/types/article";
 
 import {
   emptyArticleForm,
@@ -117,10 +117,10 @@ export default function Home() {
   }
 
   return (
-    <main className="flex min-h-screen bg-[#f6f8f6]">
+    <main className="min-h-screen bg-[#f6f8f6] pl-[250px] max-md:pl-[72px]">
       <Sidebar />
 
-      <section className="min-w-0 flex-1 p-6 md:p-10">
+      <section className="min-w-0 p-6 md:p-10">
         <ArticlesHeader onAddArticle={openNewForm} />
 
         <div className="mb-6">

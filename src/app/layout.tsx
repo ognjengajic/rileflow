@@ -3,6 +3,7 @@ import "./globals.css";
 
 import { ArticlesProvider } from "@/contexts/ArticlesContext";
 import { QuotationsProvider } from "../contexts/QuotationsContext";
+import ScrollToTop from "@/components/ScrollToTop";
 
 export const metadata: Metadata = {
   title: "RileFlow",
@@ -18,7 +19,10 @@ export default function RootLayout({
     <html lang="sr">
       <body>
         <ArticlesProvider>
-          <QuotationsProvider>{children}</QuotationsProvider>
+          <QuotationsProvider>
+            {children}
+            <ScrollToTop />
+          </QuotationsProvider>
         </ArticlesProvider>
       </body>
     </html>

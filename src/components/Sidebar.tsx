@@ -21,12 +21,12 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex min-h-screen w-[250px] shrink-0 flex-col bg-[#173d2c] px-[18px] py-7 text-white max-md:w-[72px] max-md:px-2.5">
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-[250px] shrink-0 flex-col overflow-y-auto bg-[#173d2c] px-[18px] py-7 text-white shadow-lg animate-in fade-in slide-in-from-left-2 duration-300 max-md:w-[72px] max-md:px-2.5">
       <Link
         href="/"
-        className="flex items-center gap-[11px] px-2.5 text-[21px] font-bold tracking-tight max-md:justify-center max-md:px-0"
+        className="flex items-center gap-[11px] px-2.5 text-[21px] font-bold tracking-tight transition-all duration-300 hover:translate-x-1 max-md:justify-center max-md:px-0"
       >
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white text-xl text-[#173d2c]">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-white text-xl text-[#173d2c] transition-transform duration-300 hover:scale-110">
           R
         </div>
         <span className="max-md:hidden">RileFlow</span>
@@ -37,7 +37,7 @@ export default function Sidebar() {
           MENI
         </p>
 
-        {menuItems.map((item) => {
+        {menuItems.map((item, index) => {
           const isActive = pathname === item.href;
 
           return (
@@ -45,9 +45,10 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               title={item.label}
-              className={`mb-1 flex items-center gap-[13px] rounded-lg px-3 py-3 text-sm transition-colors max-md:justify-center max-md:px-1 ${
+              style={{ animationDelay: `${index * 70}ms` }}
+              className={`mb-1 flex animate-in fade-in slide-in-from-left-2 items-center gap-[13px] rounded-lg px-3 py-3 text-sm transition-all duration-200 hover:translate-x-1 max-md:justify-center max-md:px-1 ${
                 isActive
-                  ? "bg-[#28563f] text-white"
+                  ? "bg-[#28563f] text-white shadow-sm"
                   : "text-[#d1ded6] hover:bg-[#28563f] hover:text-white"
               }`}
             >
@@ -59,17 +60,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      <div className="mt-auto flex items-center gap-[11px] border-t border-[#315743] px-2 pt-[18px] max-md:justify-center max-md:px-0">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#dce9df] font-bold text-[#173d2c]">
-          R
-        </div>
-
-        <div className="max-md:hidden">
-          <p className="text-[13px] font-semibold">Administrator</p>
-          <p className="mt-1 text-[11px] text-[#b4c9bb]">Upravitelj sistema</p>
-        </div>
-      </div>
     </aside>
   );
 }

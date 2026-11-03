@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { Article } from "@/types/article";
 import { useQuotations } from "../../contexts/QuotationsContext";
 
@@ -25,6 +26,10 @@ export default function ArticlesTable({
     setArticleQuantity,
   } = useQuotations();
 
+  const [visibleCount, setVisibleCount] = useState(20);
+
+  const visibleArticles = articles.slice(0, visibleCount);
+
   function getQuantity(articleId: number) {
     return (
       currentItems.find((item) => item.articleId === articleId)?.quantity ?? 0
@@ -39,7 +44,10 @@ export default function ArticlesTable({
         <input
           type="search"
           value={search}
-          onChange={(event) => onSearchChange(event.target.value)}
+          onChange={(event) => {
+            setVisibleCount(20);
+            onSearchChange(event.target.value);
+          }}
           placeholder="Pretraži artikle..."
           className="w-full rounded-lg border border-[#e7ece8] px-4 py-2.5 text-sm outline-none focus:border-[#174c35] sm:w-72"
         />
@@ -61,7 +69,7 @@ export default function ArticlesTable({
           </thead>
 
           <tbody>
-            {articles.map((article) => {
+            {visibleArticles.map((article) => {
               const quantity = getQuantity(article.id);
 
               return (
@@ -169,6 +177,18 @@ export default function ArticlesTable({
           </tbody>
         </table>
       </div>
+
+      {visibleCount < articles.length && (
+        <div className="flex justify-center border-t border-[#e7ece8] p-4">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((current) => current + 100)}
+            className="rounded-lg border border-[#174c35] px-5 py-2.5 text-sm font-semibold text-[#174c35] transition-colors hover:bg-[#edf4ef]"
+          >
+            Prikaži još {Math.min(100, articles.length - visibleCount)} artikala
+          </button>
+        </div>
+      )}
     </div>
   );
 }
