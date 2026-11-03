@@ -14,12 +14,8 @@ const emptyCustomer: QuotationCustomer = {
 };
 
 export default function NewQuotationPage() {
-  const {
-    currentItems,
-    decreaseArticleQuantity,
-    addArticleToQuotation,
-    saveQuotation,
-  } = useQuotations();
+  const { currentItems, decreaseArticleQuantity, saveQuotation } =
+    useQuotations();
 
   const [customer, setCustomer] = useState<QuotationCustomer>(emptyCustomer);
 
@@ -130,7 +126,7 @@ export default function NewQuotationPage() {
             </h2>
 
             <span className="text-sm text-[#89968e]">
-              {currentItems.length} artikala
+              Ukupno artikala: {currentItems.length}
             </span>
           </div>
 
@@ -222,17 +218,7 @@ export default function NewQuotationPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              setCustomer(emptyCustomer);
-            }}
-            className="rounded-lg border border-[#e7ece8] bg-white px-5 py-3 text-sm font-semibold text-[#66756b] hover:bg-[#f8faf8]"
-          >
-            Očisti kupca
-          </button>
-
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={handleSave}

@@ -12,10 +12,12 @@ type QuotationsContextType = {
   quotations: Quotation[];
   addArticleToQuotation: (article: Article) => void;
   decreaseArticleQuantity: (articleId: number) => void;
+  setArticleQuantity: (article: Article, quantity: number) => void;
   clearCurrentQuotation: () => void;
   saveQuotation: (
     quotationData: Omit<Quotation, "id" | "items">,
   ) => Quotation | null;
+  deleteQuotation: (id: number) => void;
 };
 
 const QuotationsContext = createContext<QuotationsContextType | undefined>(
@@ -54,8 +56,42 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  function setArticleQuantity(article: Article, quantity: number) {
+    const safeQuantity = Math.max(0, Math.floor(quantity));
+
+    setCurrentItems((current) => {
+      if (safeQuantity === 0) {
+        return current.filter((item) => item.articleId !== article.id);
+      }
+
+      const existing = current.find((item) => item.articleId === article.id);
+
+      if (existing) {
+        return current.map((item) =>
+          item.articleId === article.id
+            ? { ...item, quantity: safeQuantity }
+            : item,
+        );
+      }
+
+      return [
+        ...current,
+        {
+          ...createQuotationItem(article),
+          quantity: safeQuantity,
+        },
+      ];
+    });
+  }
+
   function clearCurrentQuotation() {
     setCurrentItems([]);
+  }
+
+  function deleteQuotation(id: number) {
+    setQuotations((current) =>
+      current.filter((quotation) => quotation.id !== id),
+    );
   }
 
   function saveQuotation(quotationData: Omit<Quotation, "id" | "items">) {
@@ -83,8 +119,10 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
         quotations,
         addArticleToQuotation,
         decreaseArticleQuantity,
+        setArticleQuantity,
         clearCurrentQuotation,
         saveQuotation,
+        deleteQuotation,
       }}
     >
       {children}
