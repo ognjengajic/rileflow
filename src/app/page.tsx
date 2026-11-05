@@ -1,6 +1,12 @@
 "use client";
 
-import { useReducer, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useMemo,
+  useReducer,
+  useState,
+  type FormEvent,
+} from "react";
 
 import Sidebar from "@/components/Sidebar";
 import ArticlesHeader from "@/components/articles/ArticlesHeader";
@@ -11,7 +17,7 @@ import ExcelImport from "@/components/articles/ExcelImport";
 
 import { useArticles } from "@/contexts/ArticlesContext";
 
-import type { Article } from "@/types/article";
+import type { Article, ArticleFormData } from "@/types/article";
 
 import {
   emptyArticleForm,
@@ -35,9 +41,12 @@ export default function Home() {
 
   const [deletingArticle, setDeletingArticle] = useState<Article | null>(null);
 
-  const filteredArticles = searchArticles(articles, search);
+  const filteredArticles = useMemo(
+    () => searchArticles(articles, search),
+    [articles, search],
+  );
 
-  function openNewForm() {
+  const openNewForm = useCallback(() => {
     setEditingId(null);
 
     dispatchForm({
@@ -46,9 +55,9 @@ export default function Home() {
     });
 
     setShowForm(true);
-  }
+  }, []);
 
-  function openEditForm(article: Article) {
+  const openEditForm = useCallback((article: Article) => {
     setEditingId(article.id);
 
     dispatchForm({
@@ -64,57 +73,93 @@ export default function Home() {
     });
 
     setShowForm(true);
-  }
+  }, []);
 
-  function saveArticle(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const saveArticle = useCallback(
+    (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
 
-    if (hasDuplicateArticle(articles, form, editingId)) {
-      alert("Šifra ili serijski broj već postoje.");
-      return;
-    }
+      if (hasDuplicateArticle(articles, form, editingId)) {
+        alert("Šifra ili serijski broj već postoje.");
+        return;
+      }
 
-    const articleData = {
-      name: form.name.trim(),
-      code: form.code.trim(),
-      serialNumber: form.serialNumber.trim(),
-      price: Number(form.price),
-      vat: Number(form.vat),
-      unit: form.unit,
-    };
+      const articleData = {
+        name: form.name.trim(),
+        code: form.code.trim(),
+        serialNumber: form.serialNumber.trim(),
+        price: Number(form.price),
+        vat: Number(form.vat),
+        unit: form.unit,
+      };
 
-    if (editingId !== null) {
-      updateArticle(editingId, articleData);
-    } else {
-      addArticle(articleData);
-    }
+      if (editingId !== null) {
+        updateArticle(editingId, articleData);
+      } else {
+        addArticle(articleData);
+      }
 
-    setShowForm(false);
-    setEditingId(null);
+      setShowForm(false);
+      setEditingId(null);
 
-    dispatchForm({
-      type: "RESET_FORM",
-      payload: { ...emptyArticleForm },
-    });
-  }
+      dispatchForm({
+        type: "RESET_FORM",
+        payload: { ...emptyArticleForm },
+      });
+    },
+    [articles, form, editingId, addArticle, updateArticle],
+  );
 
-  function confirmDeleteArticle() {
+  const confirmDeleteArticle = useCallback(() => {
     if (!deletingArticle) return;
 
     deleteArticle(deletingArticle.id);
     setDeletingArticle(null);
-  }
+  }, [deletingArticle, deleteArticle]);
 
-  function handleImportArticles(names: string[]) {
-    const importedCount = importArticles(names);
+  const handleImportArticles = useCallback(
+    (names: string[]) => {
+      const importedCount = importArticles(names);
 
-    if (importedCount === 0) {
-      alert("Svi izabrani artikli već postoje u katalogu.");
-      return;
-    }
+      if (importedCount === 0) {
+        alert("Svi izabrani artikli već postoje u katalogu.");
+        return;
+      }
 
-    alert(`Uspješno dodano ${importedCount} artikala.`);
-  }
+      alert(`Uspješno dodano ${importedCount} artikala.`);
+    },
+    [importArticles],
+  );
+
+  const handleDeleteRequest = useCallback(
+    (id: number) => {
+      const article = articles.find((item) => item.id === id);
+
+      if (article) {
+        setDeletingArticle(article);
+      }
+    },
+    [articles],
+  );
+
+  const handleFieldChange = useCallback(
+    (field: keyof ArticleFormData, value: string) => {
+      dispatchForm({
+        type: "UPDATE_FIELD",
+        field,
+        value,
+      });
+    },
+    [],
+  );
+
+  const closeForm = useCallback(() => {
+    setShowForm(false);
+  }, []);
+
+  const cancelDelete = useCallback(() => {
+    setDeletingArticle(null);
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#f6f8f6] pl-[250px] max-md:pl-[72px]">
@@ -132,26 +177,17 @@ export default function Home() {
           search={search}
           onSearchChange={setSearch}
           onEdit={openEditForm}
-          onDelete={(id) => {
-            const article = articles.find((item) => item.id === id);
-            if (article) setDeletingArticle(article);
-          }}
+          onDelete={handleDeleteRequest}
         />
       </section>
 
       {showForm && (
         <ArticleForm
           form={form}
-          onFieldChange={(field, value) =>
-            dispatchForm({
-              type: "UPDATE_FIELD",
-              field,
-              value,
-            })
-          }
+          onFieldChange={handleFieldChange}
           editing={editingId !== null}
           onSubmit={saveArticle}
-          onClose={() => setShowForm(false)}
+          onClose={closeForm}
         />
       )}
 
@@ -159,7 +195,7 @@ export default function Home() {
         <DeleteArticleDialog
           articleName={deletingArticle.name}
           onConfirm={confirmDeleteArticle}
-          onCancel={() => setDeletingArticle(null)}
+          onCancel={cancelDelete}
         />
       )}
     </main>
