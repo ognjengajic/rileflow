@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
+
 import Sidebar from "@/components/Sidebar";
 import { useQuotations } from "../../contexts/QuotationsContext";
 import type { QuotationCustomer } from "@/types/quotation";
@@ -16,26 +18,40 @@ export default function NewQuotationPage() {
 
   const customer = currentCustomer;
 
-  const totalWithoutVat = currentItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
+  const { totalWithoutVat, totalVat, totalWithVat } = useMemo(() => {
+    const totals = currentItems.reduce(
+      (sum, item) => {
+        const itemTotal = item.price * item.quantity;
+        const itemVat = (itemTotal * item.vat) / 100;
+
+        return {
+          totalWithoutVat: sum.totalWithoutVat + itemTotal,
+          totalVat: sum.totalVat + itemVat,
+        };
+      },
+      {
+        totalWithoutVat: 0,
+        totalVat: 0,
+      },
+    );
+
+    return {
+      ...totals,
+      totalWithVat: totals.totalWithoutVat + totals.totalVat,
+    };
+  }, [currentItems]);
+
+  const updateCustomer = useCallback(
+    (field: keyof QuotationCustomer, value: string) => {
+      setCurrentCustomer({
+        ...customer,
+        [field]: value,
+      });
+    },
+    [customer, setCurrentCustomer],
   );
 
-  const totalVat = currentItems.reduce(
-    (sum, item) => sum + (item.price * item.quantity * item.vat) / 100,
-    0,
-  );
-
-  const totalWithVat = totalWithoutVat + totalVat;
-
-  function updateCustomer(field: keyof QuotationCustomer, value: string) {
-    setCurrentCustomer({
-      ...customer,
-      [field]: value,
-    });
-  }
-
-  function handleSave() {
+  const handleSave = useCallback(() => {
     if (!customer.name.trim()) {
       alert("Unesite naziv kupca.");
       return;
@@ -58,7 +74,15 @@ export default function NewQuotationPage() {
     if (saved) {
       alert("Predračun je uspješno sačuvan.");
     }
-  }
+  }, [
+    customer,
+    currentItems.length,
+    saveQuotation,
+    quotationNumber,
+    totalWithoutVat,
+    totalVat,
+    totalWithVat,
+  ]);
 
   return (
     <main className="min-h-screen bg-[#f6f8f6] pl-[250px] max-md:pl-[72px]">
@@ -210,7 +234,7 @@ export default function NewQuotationPage() {
           </div>
         </div>
 
-        <div className="flex justify-center md:justify-center lg:justify-end">
+        <div className="flex justify-center lg:justify-end">
           <button
             type="button"
             onClick={handleSave}
