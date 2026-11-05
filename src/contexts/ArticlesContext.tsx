@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 
 import type { Article } from "@/types/article";
 
@@ -26,8 +27,13 @@ const ArticlesContext = createContext<ArticlesContextType | undefined>(
 
 export function ArticlesProvider({ children }: { children: ReactNode }) {
   const [articles, setArticles] = useState<Article[]>([]);
+  const pathname = usePathname();
 
   useEffect(() => {
+    if (pathname === "/login") {
+      return;
+    }
+
     async function loadArticles() {
       try {
         const response = await fetch("/api/articles");
@@ -45,7 +51,7 @@ export function ArticlesProvider({ children }: { children: ReactNode }) {
     }
 
     loadArticles();
-  }, []);
+  }, [pathname]);
 
   const addArticle = useCallback(async (article: Omit<Article, "id">) => {
     try {

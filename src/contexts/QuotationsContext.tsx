@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 
 import type { Article } from "@/types/article";
 import type {
@@ -51,6 +52,7 @@ const QuotationsContext = createContext<QuotationContextType | undefined>(
 
 export function QuotationsProvider({ children }: { children: ReactNode }) {
   const { articles } = useArticles();
+  const pathname = usePathname();
 
   const [currentItems, setCurrentItems] = useState<QuotationItem[]>([]);
   const [quotations, setQuotations] = useState<Quotation[]>([]);
@@ -62,6 +64,10 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    if (pathname === "/login") {
+      return;
+    }
+
     async function loadQuotations() {
       try {
         const response = await fetch("/api/quotations");
@@ -79,7 +85,7 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
     }
 
     loadQuotations();
-  }, []);
+  }, [pathname]);
 
   const articlesById = useMemo(
     () => new Map(articles.map((article) => [article.id, article])),
