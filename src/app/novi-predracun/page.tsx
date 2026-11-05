@@ -210,7 +210,7 @@ export default function NewQuotationPage() {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-center md:justify-center lg:justify-end">
           <button
             type="button"
             onClick={handleSave}

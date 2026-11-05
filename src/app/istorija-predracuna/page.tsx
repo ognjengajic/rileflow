@@ -411,12 +411,11 @@ export default function QuotationHistoryPage() {
       {printingQuotation && (
         <div className="hidden bg-white p-10 text-black print:block">
           <header className="mb-8 border-b-2 border-[#174c35] pb-5">
-            <h1 className="text-3xl font-bold text-[#174c35]">RileFlow</h1>
+            <h1 className="text-3xl font-bold text-[#174c35]">Lada Centar</h1>
 
             <h2 className="mt-6 text-2xl font-bold">PREDRAČUN</h2>
 
-            <div className="mt-4 flex justify-between text-sm">
-              <span>Broj predračuna: {printingQuotation.number}</span>
+            <div className="mt-4 flex justify-end text-sm">
               <span>Datum: {formatDate(printingQuotation.date)}</span>
             </div>
           </header>
