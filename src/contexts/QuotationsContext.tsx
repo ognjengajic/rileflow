@@ -10,6 +10,7 @@ import type {
 } from "@/types/quotation";
 
 import { createQuotationItem } from "@/types/quotation";
+import { useArticles } from "@/contexts/ArticlesContext";
 
 const emptyCustomer: QuotationCustomer = {
   name: "",
@@ -126,6 +127,8 @@ function createTestQuotations(): Quotation[] {
 }
 
 export function QuotationsProvider({ children }: { children: ReactNode }) {
+  const { articles } = useArticles();
+
   const [currentItems, setCurrentItems] = useState<QuotationItem[]>([]);
   const [quotations, setQuotations] =
     useState<Quotation[]>(createTestQuotations);
@@ -136,6 +139,23 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
   const [quotationNumber, setQuotationNumber] = useState(
     `P-${new Date().getFullYear()}-001`,
   );
+
+  const syncedCurrentItems = currentItems
+    .map((item) => {
+      const latestArticle = articles.find(
+        (article) => article.id === item.articleId,
+      );
+
+      if (!latestArticle) {
+        return null;
+      }
+
+      return {
+        ...createQuotationItem(latestArticle),
+        quantity: item.quantity,
+      };
+    })
+    .filter((item) => item !== null);
 
   function addArticleToQuotation(article: Article) {
     setCurrentItems((current) => {
@@ -205,14 +225,14 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
   }
 
   function saveQuotation(quotationData: Omit<Quotation, "id" | "items">) {
-    if (currentItems.length === 0) {
+    if (syncedCurrentItems.length === 0) {
       return null;
     }
 
     const savedQuotation: Quotation = {
       ...quotationData,
       id: Date.now(),
-      items: currentItems.map((item) => ({ ...item })),
+      items: syncedCurrentItems.map((item) => ({ ...item })),
     };
 
     setQuotations((current) => [savedQuotation, ...current]);
@@ -226,7 +246,7 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
   return (
     <QuotationsContext.Provider
       value={{
-        currentItems,
+        currentItems: syncedCurrentItems,
         quotations,
         currentCustomer,
         quotationNumber,

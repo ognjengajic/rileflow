@@ -4,7 +4,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 import type { Article } from "@/types/article";
 
-import { initialArticles, hasDuplicateArticle } from "@/lib/articles";
+import { initialArticles } from "@/lib/articles";
 
 type ArticlesContextType = {
   articles: Article[];
