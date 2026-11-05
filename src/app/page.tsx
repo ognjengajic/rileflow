@@ -76,7 +76,7 @@ export default function Home() {
   }, []);
 
   const saveArticle = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
       if (hasDuplicateArticle(articles, form, editingId)) {
@@ -94,9 +94,9 @@ export default function Home() {
       };
 
       if (editingId !== null) {
-        updateArticle(editingId, articleData);
+        await updateArticle(editingId, articleData);
       } else {
-        addArticle(articleData);
+        await addArticle(articleData);
       }
 
       setShowForm(false);
@@ -110,19 +110,18 @@ export default function Home() {
     [articles, form, editingId, addArticle, updateArticle],
   );
 
-  const confirmDeleteArticle = useCallback(() => {
+  const confirmDeleteArticle = useCallback(async () => {
     if (!deletingArticle) return;
 
-    deleteArticle(deletingArticle.id);
+    await deleteArticle(deletingArticle.id);
     setDeletingArticle(null);
   }, [deletingArticle, deleteArticle]);
 
   const handleImportArticles = useCallback(
-    (names: string[]) => {
-      const importedCount = importArticles(names);
+    async (names: string[]) => {
+      const importedCount = await importArticles(names);
 
       if (importedCount === 0) {
-        alert("Svi izabrani artikli već postoje u katalogu.");
         return;
       }
 

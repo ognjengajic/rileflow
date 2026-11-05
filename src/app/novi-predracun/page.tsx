@@ -51,7 +51,7 @@ export default function NewQuotationPage() {
     [customer, setCurrentCustomer],
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!customer.name.trim()) {
       alert("Unesite naziv kupca.");
       return;
@@ -62,17 +62,26 @@ export default function NewQuotationPage() {
       return;
     }
 
-    const saved = saveQuotation({
-      number: quotationNumber,
-      date: new Date().toISOString(),
-      customer,
-      totalWithoutVat,
-      totalVat,
-      totalWithVat,
-    });
+    try {
+      const saved = await saveQuotation({
+        number: quotationNumber,
+        date: new Date().toISOString(),
+        customer,
+        totalWithoutVat,
+        totalVat,
+        totalWithVat,
+      });
 
-    if (saved) {
-      alert("Predračun je uspješno sačuvan.");
+      if (saved) {
+        alert("Predračun je uspješno sačuvan.");
+      }
+    } catch (error) {
+      console.error("Greška pri čuvanju predračuna:", error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Predračun nije sačuvan. Pokušajte ponovo.",
+      );
     }
   }, [
     customer,
@@ -83,7 +92,6 @@ export default function NewQuotationPage() {
     totalVat,
     totalWithVat,
   ]);
-
   return (
     <main className="min-h-screen bg-[#f6f8f6] pl-[250px] max-md:pl-[72px]">
       <Sidebar />

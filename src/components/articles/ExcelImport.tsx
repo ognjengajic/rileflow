@@ -4,7 +4,7 @@ import { useMemo, useState, type ChangeEvent } from "react";
 import * as XLSX from "xlsx";
 
 type ExcelImportProps = {
-  onImport: (names: string[]) => void;
+  onImport: (names: string[]) => Promise<void>;
 };
 
 type ExcelColumn = {
@@ -19,6 +19,7 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
   const [selectedColumn, setSelectedColumn] = useState(0);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
+  const [importing, setImporting] = useState(false);
 
   const previewNames = useMemo(
     () =>
@@ -42,7 +43,6 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: "array" });
-
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
 
       if (!firstSheet) {
@@ -103,7 +103,7 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
     }
   }
 
-  function confirmImport() {
+  async function confirmImport() {
     const names = rows
       .map((row) => row[selectedColumn]?.trim() ?? "")
       .filter((name) => name !== "");
@@ -113,12 +113,20 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
       return;
     }
 
-    onImport(names);
-
-    setColumns([]);
-    setRows([]);
-    setFileName("");
+    setImporting(true);
     setError("");
+
+    try {
+      await onImport(names);
+
+      setColumns([]);
+      setRows([]);
+      setFileName("");
+    } catch {
+      setError("Uvoz nije uspio. Pokušajte ponovo.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   return (
@@ -128,7 +136,6 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
           <h2 className="font-semibold text-[#1b2b22]">
             Uvoz artikala iz Excela
           </h2>
-
           <p className="mt-1 text-sm text-[#89968e]">
             Izaberite Excel fajl i kolonu sa nazivima artikala.
           </p>
@@ -140,6 +147,7 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
             accept=".xlsx,.xls"
             className="hidden"
             onChange={handleFileSelect}
+            disabled={importing}
           />
           Izaberi Excel fajl
         </label>
@@ -164,6 +172,7 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
           <select
             value={selectedColumn}
             onChange={(event) => setSelectedColumn(Number(event.target.value))}
+            disabled={importing}
             className="w-full rounded-lg border border-[#e7ece8] bg-white px-4 py-3 text-sm outline-none focus:border-[#174c35]"
           >
             {columns.map((column) => (
@@ -195,9 +204,10 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
             <button
               type="button"
               onClick={confirmImport}
-              className="rounded-lg bg-[#174c35] px-5 py-3 text-sm font-semibold text-white hover:bg-[#236445]"
+              disabled={importing}
+              className="rounded-lg bg-[#174c35] px-5 py-3 text-sm font-semibold text-white hover:bg-[#236445] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Potvrdi izbor kolone
+              {importing ? "Uvoz u toku..." : "Potvrdi izbor kolone"}
             </button>
           </div>
         </div>
