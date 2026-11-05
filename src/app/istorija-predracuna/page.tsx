@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import Sidebar from "../../components/Sidebar";
 import { useQuotations } from "../../contexts/QuotationsContext";
@@ -46,21 +46,26 @@ export default function QuotationHistoryPage() {
 
   const normalizedSearch = searchTerm.trim().toLocaleLowerCase("sr-Latn");
 
-  const filteredQuotations = quotations.filter((quotation) => {
-    const searchableValues = [
-      quotation.number,
-      quotation.customer.name,
-      quotation.customer.taxNumber,
-      quotation.customer.phone,
-      quotation.customer.email,
-    ];
+  const filteredQuotations = useMemo(() => {
+    return quotations.filter((quotation) => {
+      const searchableValues = [
+        quotation.number,
+        quotation.customer.name,
+        quotation.customer.taxNumber,
+        quotation.customer.phone,
+        quotation.customer.email,
+      ];
 
-    return searchableValues.some((value) =>
-      (value || "").toLocaleLowerCase("sr-Latn").includes(normalizedSearch),
-    );
-  });
+      return searchableValues.some((value) =>
+        (value || "").toLocaleLowerCase("sr-Latn").includes(normalizedSearch),
+      );
+    });
+  }, [quotations, normalizedSearch]);
 
-  const visibleQuotations = filteredQuotations.slice(0, visibleCount);
+  const visibleQuotations = useMemo(
+    () => filteredQuotations.slice(0, visibleCount),
+    [filteredQuotations, visibleCount],
+  );
 
   return (
     <>
