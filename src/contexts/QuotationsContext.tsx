@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import type { Article } from "@/types/article";
 import type {
@@ -140,24 +147,31 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
     `P-${new Date().getFullYear()}-001`,
   );
 
-  const syncedCurrentItems = currentItems
-    .map((item) => {
-      const latestArticle = articles.find(
-        (article) => article.id === item.articleId,
-      );
+  const articlesById = useMemo(
+    () => new Map(articles.map((article) => [article.id, article])),
+    [articles],
+  );
 
-      if (!latestArticle) {
-        return null;
-      }
+  const syncedCurrentItems = useMemo(
+    () =>
+      currentItems
+        .map((item) => {
+          const latestArticle = articlesById.get(item.articleId);
 
-      return {
-        ...createQuotationItem(latestArticle),
-        quantity: item.quantity,
-      };
-    })
-    .filter((item) => item !== null);
+          if (!latestArticle) {
+            return null;
+          }
 
-  function addArticleToQuotation(article: Article) {
+          return {
+            ...createQuotationItem(latestArticle),
+            quantity: item.quantity,
+          };
+        })
+        .filter((item): item is QuotationItem => item !== null),
+    [currentItems, articlesById],
+  );
+
+  const addArticleToQuotation = useCallback((article: Article) => {
     setCurrentItems((current) => {
       const existing = current.find((item) => item.articleId === article.id);
 
@@ -171,9 +185,9 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
 
       return [...current, createQuotationItem(article)];
     });
-  }
+  }, []);
 
-  function decreaseArticleQuantity(articleId: number) {
+  const decreaseArticleQuantity = useCallback((articleId: number) => {
     setCurrentItems((current) =>
       current
         .map((item) =>
@@ -183,83 +197,103 @@ export function QuotationsProvider({ children }: { children: ReactNode }) {
         )
         .filter((item) => item.quantity > 0),
     );
-  }
+  }, []);
 
-  function setArticleQuantity(article: Article, quantity: number) {
-    const safeQuantity = Math.max(0, Math.floor(quantity));
+  const setArticleQuantity = useCallback(
+    (article: Article, quantity: number) => {
+      const safeQuantity = Math.max(0, Math.floor(quantity));
 
-    setCurrentItems((current) => {
-      if (safeQuantity === 0) {
-        return current.filter((item) => item.articleId !== article.id);
-      }
+      setCurrentItems((current) => {
+        if (safeQuantity === 0) {
+          return current.filter((item) => item.articleId !== article.id);
+        }
 
-      const existing = current.find((item) => item.articleId === article.id);
+        const existing = current.find((item) => item.articleId === article.id);
 
-      if (existing) {
-        return current.map((item) =>
-          item.articleId === article.id
-            ? { ...item, quantity: safeQuantity }
-            : item,
-        );
-      }
+        if (existing) {
+          return current.map((item) =>
+            item.articleId === article.id
+              ? { ...item, quantity: safeQuantity }
+              : item,
+          );
+        }
 
-      return [
-        ...current,
-        {
-          ...createQuotationItem(article),
-          quantity: safeQuantity,
-        },
-      ];
-    });
-  }
+        return [
+          ...current,
+          {
+            ...createQuotationItem(article),
+            quantity: safeQuantity,
+          },
+        ];
+      });
+    },
+    [],
+  );
 
-  function clearCurrentQuotation() {
+  const clearCurrentQuotation = useCallback(() => {
     setCurrentItems([]);
     setCurrentCustomer(emptyCustomer);
-  }
+  }, []);
 
-  function deleteQuotation(id: number) {
+  const deleteQuotation = useCallback((id: number) => {
     setQuotations((current) =>
       current.filter((quotation) => quotation.id !== id),
     );
-  }
+  }, []);
 
-  function saveQuotation(quotationData: Omit<Quotation, "id" | "items">) {
-    if (syncedCurrentItems.length === 0) {
-      return null;
-    }
+  const saveQuotation = useCallback(
+    (quotationData: Omit<Quotation, "id" | "items">) => {
+      if (syncedCurrentItems.length === 0) {
+        return null;
+      }
 
-    const savedQuotation: Quotation = {
-      ...quotationData,
-      id: Date.now(),
-      items: syncedCurrentItems.map((item) => ({ ...item })),
-    };
+      const savedQuotation: Quotation = {
+        ...quotationData,
+        id: Date.now(),
+        items: syncedCurrentItems.map((item) => ({ ...item })),
+      };
 
-    setQuotations((current) => [savedQuotation, ...current]);
+      setQuotations((current) => [savedQuotation, ...current]);
 
-    setCurrentItems([]);
-    setCurrentCustomer(emptyCustomer);
+      setCurrentItems([]);
+      setCurrentCustomer(emptyCustomer);
 
-    return savedQuotation;
-  }
+      return savedQuotation;
+    },
+    [syncedCurrentItems],
+  );
+
+  const value = useMemo(
+    () => ({
+      currentItems: syncedCurrentItems,
+      quotations,
+      currentCustomer,
+      quotationNumber,
+      setCurrentCustomer,
+      setQuotationNumber,
+      addArticleToQuotation,
+      decreaseArticleQuantity,
+      setArticleQuantity,
+      clearCurrentQuotation,
+      saveQuotation,
+      deleteQuotation,
+    }),
+    [
+      syncedCurrentItems,
+      quotations,
+      currentCustomer,
+      quotationNumber,
+      addArticleToQuotation,
+      decreaseArticleQuantity,
+      setArticleQuantity,
+      clearCurrentQuotation,
+      saveQuotation,
+      deleteQuotation,
+    ],
+  );
 
   return (
-    <QuotationsContext.Provider
-      value={{
-        currentItems: syncedCurrentItems,
-        quotations,
-        currentCustomer,
-        quotationNumber,
-        setCurrentCustomer,
-        setQuotationNumber,
-        addArticleToQuotation,
-        decreaseArticleQuantity,
-        setArticleQuantity,
-        clearCurrentQuotation,
-        saveQuotation,
-        deleteQuotation,
-      }}
-    >
+    <QuotationsContext.Provider value={value}>
       {children}
     </QuotationsContext.Provider>
   );

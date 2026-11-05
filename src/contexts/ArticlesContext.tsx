@@ -1,9 +1,15 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import type { Article } from "@/types/article";
-
 import { initialArticles } from "@/lib/articles";
 
 type ArticlesContextType = {
@@ -21,65 +27,71 @@ const ArticlesContext = createContext<ArticlesContextType | undefined>(
 export function ArticlesProvider({ children }: { children: ReactNode }) {
   const [articles, setArticles] = useState<Article[]>(initialArticles);
 
-  function addArticle(article: Omit<Article, "id">) {
-    setArticles((current) => [...current, { ...article, id: Date.now() }]);
-  }
+  const addArticle = useCallback((article: Omit<Article, "id">) => {
+    setArticles((current) => [
+      ...current,
+      {
+        ...article,
+        id: Math.max(Date.now(), ...current.map((item) => item.id + 1)),
+      },
+    ]);
+  }, []);
 
-  function updateArticle(id: number, updatedArticle: Omit<Article, "id">) {
-    setArticles((current) =>
-      current.map((article) =>
-        article.id === id ? { ...updatedArticle, id } : article,
-      ),
-    );
-  }
-
-  function deleteArticle(id: number) {
-    setArticles((current) => current.filter((article) => article.id !== id));
-  }
-
-  function importArticles(names: string[]) {
-    let importedCount = 0;
-
-    setArticles((current) => {
-      const existingNames = new Set(
-        current.map((article) => article.name.trim().toLowerCase()),
+  const updateArticle = useCallback(
+    (id: number, updatedArticle: Omit<Article, "id">) => {
+      setArticles((current) =>
+        current.map((article) =>
+          article.id === id ? { ...updatedArticle, id } : article,
+        ),
       );
+    },
+    [],
+  );
 
-      const newArticles = names
-        .map((name) => name.trim())
-        .filter(
-          (name) => name !== "" && !existingNames.has(name.toLowerCase()),
-        );
+  const deleteArticle = useCallback((id: number) => {
+    setArticles((current) => current.filter((article) => article.id !== id));
+  }, []);
 
-      importedCount = newArticles.length;
+  const importArticles = useCallback((names: string[]) => {
+    const newArticles = names
+      .map((name) => name.trim())
+      .filter((name) => name !== "");
 
-      return [
-        ...current,
-        ...newArticles.map((name, index) => ({
-          id: Date.now() + index,
-          name,
-          code: "",
-          serialNumber: "",
-          price: 0,
-          vat: 17,
-          unit: "kom",
-        })),
-      ];
-    });
+    if (newArticles.length === 0) {
+      return 0;
+    }
 
-    return importedCount;
-  }
+    const firstId = Date.now();
+
+    setArticles((current) => [
+      ...current,
+      ...newArticles.map((name, index) => ({
+        id: firstId + index,
+        name,
+        code: "",
+        serialNumber: "",
+        price: 0,
+        vat: 17,
+        unit: "kom",
+      })),
+    ]);
+
+    return newArticles.length;
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      articles,
+      addArticle,
+      updateArticle,
+      deleteArticle,
+      importArticles,
+    }),
+    [articles, addArticle, updateArticle, deleteArticle, importArticles],
+  );
 
   return (
-    <ArticlesContext.Provider
-      value={{
-        articles,
-        addArticle,
-        updateArticle,
-        deleteArticle,
-        importArticles,
-      }}
-    >
+    <ArticlesContext.Provider value={value}>
       {children}
     </ArticlesContext.Provider>
   );
