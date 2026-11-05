@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Article } from "@/types/article";
 import { useQuotations } from "../../contexts/QuotationsContext";
 
@@ -28,13 +28,15 @@ export default function ArticlesTable({
 
   const [visibleCount, setVisibleCount] = useState(20);
 
-  const visibleArticles = articles.slice(0, visibleCount);
+  const visibleArticles = useMemo(
+    () => articles.slice(0, visibleCount),
+    [articles, visibleCount],
+  );
 
-  function getQuantity(articleId: number) {
-    return (
-      currentItems.find((item) => item.articleId === articleId)?.quantity ?? 0
-    );
-  }
+  const quantitiesByArticleId = useMemo(
+    () => new Map(currentItems.map((item) => [item.articleId, item.quantity])),
+    [currentItems],
+  );
 
   return (
     <div className="overflow-hidden rounded-xl border border-[#e7ece8] bg-white">
@@ -70,7 +72,7 @@ export default function ArticlesTable({
 
           <tbody>
             {visibleArticles.map((article) => {
-              const quantity = getQuantity(article.id);
+              const quantity = quantitiesByArticleId.get(article.id) ?? 0;
 
               return (
                 <tr
