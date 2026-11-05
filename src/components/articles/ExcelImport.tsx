@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import * as XLSX from "xlsx";
 
 type ExcelImportProps = {
@@ -16,11 +16,20 @@ type ExcelColumn = {
 export default function ExcelImport({ onImport }: ExcelImportProps) {
   const [columns, setColumns] = useState<ExcelColumn[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
-  const [selectedColumn, setSelectedColumn] = useState<number>(0);
+  const [selectedColumn, setSelectedColumn] = useState(0);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState("");
 
-  async function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
+  const previewNames = useMemo(
+    () =>
+      rows
+        .map((row) => row[selectedColumn] ?? "")
+        .filter(Boolean)
+        .slice(0, 5),
+    [rows, selectedColumn],
+  );
+
+  async function handleFileSelect(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -50,7 +59,10 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
         throw new Error("Excel fajl je prazan.");
       }
 
-      const maxColumns = Math.max(...data.map((row) => row.length));
+      const maxColumns = data.reduce(
+        (max, row) => Math.max(max, row.length),
+        0,
+      );
 
       if (maxColumns === 0) {
         throw new Error("Nema podataka u Excel fajlu.");
@@ -72,10 +84,12 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
         },
       );
 
+      const formattedRows = data.map((row) =>
+        row.map((cell) => String(cell ?? "").trim()),
+      );
+
       setColumns(excelColumns);
-
-      setRows(data.map((row) => row.map((cell) => String(cell ?? "").trim())));
-
+      setRows(formattedRows);
       setSelectedColumn(0);
       setFileName(file.name);
     } catch (err) {
@@ -84,24 +98,22 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
           ? err.message
           : "Greška prilikom čitanja Excel fajla.",
       );
+    } finally {
+      event.target.value = "";
     }
-
-    event.target.value = "";
   }
 
   function confirmImport() {
     const names = rows
       .map((row) => row[selectedColumn]?.trim() ?? "")
-      .filter((name, index) => name && index > 0);
+      .filter((name) => name !== "");
 
-    const uniqueNames = [...new Set(names)];
-
-    if (uniqueNames.length === 0) {
+    if (names.length === 0) {
       setError("Izabrana kolona ne sadrži nazive artikala.");
       return;
     }
 
-    onImport(uniqueNames);
+    onImport(names);
 
     setColumns([]);
     setRows([]);
@@ -169,18 +181,14 @@ export default function ExcelImport({ onImport }: ExcelImportProps) {
               Primjer podataka iz izabrane kolone
             </p>
 
-            {rows
-              .map((row) => row[selectedColumn] ?? "")
-              .filter(Boolean)
-              .slice(0, 5)
-              .map((name, index) => (
-                <p
-                  key={index}
-                  className="border-b border-[#e7ece8] py-2 text-sm text-[#1b2b22] last:border-0"
-                >
-                  {name}
-                </p>
-              ))}
+            {previewNames.map((name, index) => (
+              <p
+                key={index}
+                className="border-b border-[#e7ece8] py-2 text-sm text-[#1b2b22] last:border-0"
+              >
+                {name}
+              </p>
+            ))}
           </div>
 
           <div className="mt-5 flex justify-end">
